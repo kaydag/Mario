@@ -1,16 +1,11 @@
-/* =============================================================
-   SE102 - MARIOX
-   ============================================================= */
-
- // --- IMPORT LIBARIES ---
-#pragma region ImportLibaries
+﻿#pragma region ImportLibaries
 
 #include "core/Game.h"
 #include "render/Sprites.h"
 #include "animation/Animations.h"
 #include "render/Textures.h"
 
-#include "character/Mario.h"
+#include "Character/Mario.h"
 
 #include <string.h>
 #include <vector>
@@ -19,8 +14,6 @@
 
 #pragma endregion
 
-
-// --- SETTINGS ---
 #pragma region Settings
 
 #define WINDOW_TITLE L"MarioX"
@@ -30,16 +23,12 @@
 
 #pragma endregion
 
-
-// --- GLOBAL VARIABLES (GAME OBJECTS) ---
 #pragma region GlobalVariables_GameObjects
 
 std::vector<GameObject*> g_objectList;
 
 #pragma endregion
 
-
-// --- FUNCTION PROTOTYPES ---
 #pragma region FunctionPrototypes
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -50,10 +39,6 @@ void Cleanup();
 
 #pragma endregion
 
-
-// =============================================================
-// MAIN FUNCTION
-// =============================================================
 #pragma region MainFunction
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
@@ -132,10 +117,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 #pragma endregion
 
-
-// =============================================================
-// LOGIC SECTION
-// =============================================================
 #pragma region LogicSection
 
 // CALCULATION (Physics, Movement)
@@ -175,10 +156,6 @@ void Render()
 
 #pragma endregion
 
-
-// =============================================================
-// SETUP SECTION
-// =============================================================
 #pragma region SetupSection
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -248,7 +225,7 @@ void LoadResources()
     ani = new Animation(100);
     ani->Add(5); ani->Add(6); ani->Add(7);
     animations->Add(103, ani);
-    
+
     //Jumping Right
     ani = new Animation(100);
     ani->Add(8, 1000);
