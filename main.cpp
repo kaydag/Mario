@@ -5,7 +5,8 @@
 #include "animation/Animations.h"
 #include "render/Textures.h"
 
-#include "Character/Mario.h"
+#include "character/Mario.h"
+#include "gameplay/Brick.h"
 
 #include <string.h>
 #include <vector>
@@ -26,6 +27,8 @@
 #pragma region GlobalVariables_GameObjects
 
 std::vector<GameObject*> g_objectList;
+
+bool g_showBBox = false;
 
 #pragma endregion
 
@@ -122,9 +125,23 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 // CALCULATION (Physics, Movement)
 void Update(DWORD dt)
 {
+    static bool isF2Pressed = false;
+    if (GetAsyncKeyState(VK_F2) & 0x8000)
+    {
+        if (!isF2Pressed)
+        {
+            g_showBBox = !g_showBBox;
+            isF2Pressed = true;
+        }
+    }
+    else
+    {
+        isF2Pressed = false;
+    }
+
     for (GameObject* obj : g_objectList)
     {
-        obj->Update((DWORD)dt);
+        obj->Update((DWORD)dt, &g_objectList);
     }
 }
 
@@ -147,6 +164,7 @@ void Render()
         for (GameObject* obj : g_objectList)
         {
             obj->Render();
+            if (g_showBBox) obj->RenderBoundingBox();
         }
 
         game->GetSpriteHandler()->End();
@@ -171,17 +189,31 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void LoadResources()
 {
+    //---------------
     //1. Tải Textures
+    //---------------
     Textures* textures = Textures::GetInstance();
 
     textures->Add(0, L"assets/mario.png");
+    textures->Add(1, L"assets/CommonObjects&Pipes.png");
+    textures->Add(99, L"assets/bbox.png");
 
     ID3D10ShaderResourceView* texMario = textures->Get(0);
+    ID3D10ShaderResourceView* texCommon = textures->Get(1);
+    ID3D10ShaderResourceView* texBBox = textures->Get(99);
 
     int marioTexWidth = 1215;
     int marioTexHeight = 564;
 
+    int commonTexWidth = 1278;
+    int commonTexHeight = 882;
+
+    int bboxTexWidtth = 10;
+    int bboxTexHeight = 10;
+
+    //---------------
     //2. Cắt thành Sprites
+    //---------------
     Sprites* sprites = Sprites::GetInstance();
 
     //Idle Right
@@ -203,7 +235,15 @@ void LoadResources()
     //Jumping Left
     sprites->Add(9, 87, 0, 137, 50, texMario, marioTexWidth, marioTexHeight);
 
+    //Brick
+    sprites->Add(10, 357, 108, 404, 155, texCommon, commonTexWidth, commonTexHeight);
+
+    //Bounding Box
+    sprites->Add(99999, 0, 0, 9, 9, texBBox, bboxTexWidtth, bboxTexHeight);
+
+    //---------------
     //3. Gom thành Animation
+    //---------------
     Animations* animations = Animations::GetInstance();
     Animation* ani;
 
@@ -235,10 +275,25 @@ void LoadResources()
     ani->Add(9, 1000);
     animations->Add(105, ani);
 
+    //Brick
+    ani = new Animation(100);
+    ani->Add(10, 1000);
+    animations->Add(201, ani);
+
+    //---------------
     //4. Khởi tạo
-    Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+    //---------------
+    Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, 400.0f);
     g_objectList.push_back(mario);
+
+    for (int i = 0; i < 14; i++)
+    {
+        Brick* brick = new Brick(i * 48.0f, 50.0f);
+        g_objectList.push_back(brick);
+    }
+
 }
+
 
 void Cleanup()
 {

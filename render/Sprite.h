@@ -15,5 +15,6 @@ private:
 public:
     Sprite(int id, int left, int top, int right, int bottom, ID3D10ShaderResourceView* tex, int texWidth, int texHeight);
     void Draw(float x, float y);
+    void Draw(float x, float y, float drawWidth, float drawHeight, float alpha = 0.5f);
     ~Sprite();
 };
