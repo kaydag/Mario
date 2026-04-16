@@ -4,7 +4,8 @@
 #include "render/Sprites.h"
 #include "animation/Animations.h"
 #include "render/Textures.h"
-
+#include "character/Mario.h"
+#include "gameplay/Brick.h"
 #include "Character/Mario.h"
 
 #include <string.h>
@@ -39,6 +40,7 @@ Intro* introScene = NULL;
 #pragma region GlobalVariables_GameObjects
 
 std::vector<GameObject*> g_objectList;
+bool g_showBBox = false;
 
 #pragma endregion
 
@@ -135,6 +137,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 // CALCULATION (Physics, Movement)
 void Update(DWORD dt)
 {
+    static bool isF2Pressed = false;
+    if (GetAsyncKeyState(VK_F2) & 0x8000)
+    {
+        if (!isF2Pressed)
+        {
+            g_showBBox = !g_showBBox;
+            isF2Pressed = true;
+        }
+    }
+    else
+    {
+        isF2Pressed = false;
+    }
+
     if (currentState == STATE_INTRO)
     {
         introScene->Update(dt);
@@ -145,7 +161,7 @@ void Update(DWORD dt)
     else {
         HUD::GetInstance()->Update(dt);
         for (GameObject* obj : g_objectList) {
-            obj->Update(dt);
+            obj->Update(dt, &g_objectList);
         }
     }
 }
@@ -183,6 +199,7 @@ void Render()
             for (GameObject* obj : g_objectList)
             {
                 obj->Render();
+                if (g_showBBox) obj->RenderBoundingBox();
             }
             // Vẽ HUD lên trên cùng
             HUD::GetInstance()->Render();
@@ -219,9 +236,19 @@ void LoadResources()
     // 1. NẠP TÀI NGUYÊN CHO MARIO
     // ==========================================
     textures->Add(0, L"assets/mario.png");
+    textures->Add(1, L"assets/CommonObjects&Pipes.png");
+    textures->Add(99, L"assets/bbox.png");
     ID3D10ShaderResourceView* texMario = textures->Get(0);
+    ID3D10ShaderResourceView* texCommon = textures->Get(1);
+    ID3D10ShaderResourceView* texBBox = textures->Get(99);
     int marioTexWidth = 1215;
     int marioTexHeight = 564;
+
+    int commonTexWidth = 1278;
+    int commonTexHeight = 882;
+
+    int bboxTexWidtth = 10;
+    int bboxTexHeight = 10;
 
     // Idle
     sprites->Add(0, 628, 0, 676, 48, texMario, marioTexWidth, marioTexHeight); // Phải
@@ -239,6 +266,12 @@ void LoadResources()
     sprites->Add(8, 1077, 0, 1127, 50, texMario, marioTexWidth, marioTexHeight);
     sprites->Add(9, 87, 0, 137, 50, texMario, marioTexWidth, marioTexHeight);
 
+    //Brick
+    sprites->Add(10, 357, 108, 404, 155, texCommon, commonTexWidth, commonTexHeight);
+
+    //Bounding Box
+    sprites->Add(99999, 0, 0, 9, 9, texBBox, bboxTexWidtth, bboxTexHeight);
+
     Animation* ani;
     
     // Gom Animation
@@ -251,9 +284,20 @@ void LoadResources()
     ani = new Animation(100); ani->Add(8, 1000); animations->Add(104, ani);
     ani = new Animation(100); ani->Add(9, 1000); animations->Add(105, ani);
 
+    //Brick
+    ani = new Animation(100);
+    ani->Add(10, 1000);
+    animations->Add(201, ani);
+
     // Khởi tạo Mario
-    Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+    Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, 400.0f);
     g_objectList.push_back(mario);
+
+    for (int i = 0; i < 14; i++)
+    {
+        Brick* brick = new Brick(i * 48.0f, 50.0f);
+        g_objectList.push_back(brick);
+    }
 
     // ==========================================
     // 2. NẠP TÀI NGUYÊN CHO HUD (SỐ TỪ 0-9)
