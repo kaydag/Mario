@@ -1,16 +1,19 @@
 #include "../render/Sprite.h"
 #include "../core/Game.h"
 
-Sprite::Sprite(int id, int left, int top, int right, int bottom, ID3D10ShaderResourceView* tex, int texWidth, int texHeight)
+Sprite::Sprite(int id, int left, int top, int right, int bottom, LPDIRECT3DTEXTURE tex)
 {
     this->id = id;
     this->left = left;
     this->top = top;
     this->right = right;
     this->bottom = bottom;
-    this->texture = tex;
 
-    spriteInfo.pTexture = tex;
+    this->texture = tex->GetShaderResourceView();
+    int texWidth = tex->GetWidth();
+    int texHeight = tex->GetHeight();
+
+    spriteInfo.pTexture = this->texture;
 
     spriteInfo.TexCoord.x = this->left / (float)texWidth;
     spriteInfo.TexCoord.y = this->top / (float)texHeight;

@@ -6,25 +6,13 @@
 #include "render/Textures.h"
 #include "character/Mario.h"
 #include "gameplay/Brick.h"
-#include "Character/Mario.h"
+#include "ui/HUB.h"
+#include "ui/Intro.h"
 
 #include <string.h>
 #include <vector>
 #include <stdlib.h>
 #include <time.h>
-
-// Thêm include ở đầu file main.cpp
-#include "ui/HUB.h"
-#include "ui/Intro.h"
-
-// Khai báo trạng thái game
-enum GameState {
-    STATE_INTRO,
-    STATE_PLAYING
-};
-
-GameState currentState = STATE_INTRO;
-Intro* introScene = NULL;
 
 #pragma endregion
 
@@ -37,10 +25,28 @@ Intro* introScene = NULL;
 
 #pragma endregion
 
-#pragma region GlobalVariables_GameObjects
+#pragma region GlobalVariables/GameObjects/ID_Definitions
 
 std::vector<GameObject*> g_objectList;
+
 bool g_showBBox = false;
+
+enum GameState {
+    STATE_INTRO,
+    STATE_PLAYING
+};
+
+GameState currentState = STATE_INTRO;
+
+Intro* introScene = NULL;
+
+enum TEXTURE_ID {
+    TEX_MARIO = 0,
+    TEX_COMMON = 1,
+    TEX_FONT = 20,
+    TEX_INTRO = 30,
+    TEX_BBOX = 99
+};
 
 #pragma endregion
 
@@ -231,50 +237,55 @@ void LoadResources()
     Textures* textures = Textures::GetInstance();
     Sprites* sprites = Sprites::GetInstance();
     Animations* animations = Animations::GetInstance();
+    Animation* ani;
 
     // ==========================================
-    // 1. NẠP TÀI NGUYÊN CHO MARIO
+    // 1. NẠP TÀI NGUYÊN
     // ==========================================
+
     textures->Add(0, L"assets/mario.png");
     textures->Add(1, L"assets/CommonObjects&Pipes.png");
+    textures->Add(20, L"assets/font.png");
+    textures->Add(30, L"assets/intro_items.png");
     textures->Add(99, L"assets/bbox.png");
-    ID3D10ShaderResourceView* texMario = textures->Get(0);
-    ID3D10ShaderResourceView* texCommon = textures->Get(1);
-    ID3D10ShaderResourceView* texBBox = textures->Get(99);
-    int marioTexWidth = 1215;
-    int marioTexHeight = 564;
 
-    int commonTexWidth = 1278;
-    int commonTexHeight = 882;
-
-    int bboxTexWidtth = 10;
-    int bboxTexHeight = 10;
+    // ==========================================
+    // 2. CẮT SPRITES
+    // ==========================================
 
     // Idle
-    sprites->Add(0, 628, 0, 676, 48, texMario, marioTexWidth, marioTexHeight); // Phải
-    sprites->Add(1, 538, 0, 586, 48, texMario, marioTexWidth, marioTexHeight); // Trái
+    sprites->Add(0, 628, 0, 676, 48, TEX_MARIO); // Phải
+    sprites->Add(1, 538, 0, 586, 48, TEX_MARIO); // Trái
     
     // Run
-    sprites->Add(2, 719, 0, 767, 48, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(3, 809, 0, 857, 48, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(4, 899, 0, 947, 48, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(5, 446, 0, 494, 48, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(6, 357, 0, 405, 48, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(7, 267, 0, 315, 48, texMario, marioTexWidth, marioTexHeight);
+    sprites->Add(2, 719, 0, 767, 48, TEX_MARIO);
+    sprites->Add(3, 809, 0, 857, 48, TEX_MARIO);
+    sprites->Add(4, 899, 0, 947, 48, TEX_MARIO);
+    sprites->Add(5, 446, 0, 494, 48, TEX_MARIO);
+    sprites->Add(6, 357, 0, 405, 48, TEX_MARIO);
+    sprites->Add(7, 267, 0, 315, 48, TEX_MARIO);
     
     // Jump
-    sprites->Add(8, 1077, 0, 1127, 50, texMario, marioTexWidth, marioTexHeight);
-    sprites->Add(9, 87, 0, 137, 50, texMario, marioTexWidth, marioTexHeight);
+    sprites->Add(8, 1077, 0, 1127, 50, TEX_MARIO);
+    sprites->Add(9, 87, 0, 137, 50, TEX_MARIO);
 
-    //Brick
-    sprites->Add(10, 357, 108, 404, 155, texCommon, commonTexWidth, commonTexHeight);
+    //  Brick
+    sprites->Add(10, 357, 108, 404, 155, TEX_COMMON);
 
-    //Bounding Box
-    sprites->Add(99999, 0, 0, 9, 9, texBBox, bboxTexWidtth, bboxTexHeight);
+    // Intro
+    sprites->Add(2000, 8, 19, 648, 499, TEX_INTRO);    // 2000: Nền màn nhung đỏ
+    sprites->Add(2001, 8, 642, 308, 792, TEX_INTRO);  // 2001: Logo Super Mario
+    sprites->Add(2002, 411, 601, 611, 651, TEX_INTRO); // 2002: Chữ 1 Player / 2 Player
+    sprites->Add(2003, 388, 601, 409, 620, TEX_INTRO); // 2003: Con trỏ (Nấm)
 
-    Animation* ani;
+    // Bounding Box
+    sprites->Add(99999, 0, 0, 9, 9, 99);
     
-    // Gom Animation
+    // ==========================================
+    // 3. GOM SPRITES TẠO ANIMATION
+    // ==========================================
+
+    // Tạo animation cho Mario
     ani = new Animation(100); ani->Add(0, 1000); animations->Add(100, ani);
     ani = new Animation(100); ani->Add(1, 1000); animations->Add(101, ani);
     
@@ -284,45 +295,30 @@ void LoadResources()
     ani = new Animation(100); ani->Add(8, 1000); animations->Add(104, ani);
     ani = new Animation(100); ani->Add(9, 1000); animations->Add(105, ani);
 
-    //Brick
-    ani = new Animation(100);
-    ani->Add(10, 1000);
-    animations->Add(201, ani);
+    // Tạo animation cho Brick
+    ani = new Animation(100); ani->Add(10, 1000); animations->Add(201, ani);
+
+    // ==========================================
+    // 4. KHỞI TẠO OBJECT
+    // ==========================================
 
     // Khởi tạo Mario
     Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, 400.0f);
     g_objectList.push_back(mario);
 
+
+    // Khởi tạo platform gạch
     for (int i = 0; i < 14; i++)
     {
         Brick* brick = new Brick(i * 48.0f, 50.0f);
         g_objectList.push_back(brick);
     }
 
-    // ==========================================
-    // 2. NẠP TÀI NGUYÊN CHO HUD (SỐ TỪ 0-9)
-    // ==========================================
-    textures->Add(20, L"assets/font.png");
-    ID3D10ShaderResourceView* texFont = textures->Get(20);
-    
-    // Vòng lặp cắt 10 số (0-9). 
-    // Giả định: ảnh font.png có kích thước 160x16, mỗi số rộng 16px, cao 16px.
+    // Cắt 10 số (0-9)
     for (int i = 0; i < 10; i++) 
     {
-        sprites->Add(1000 + i, 22 + i * 16, 136, 22 + (i + 1) * 16, 136 + 16, texFont, 266, 159);
+        sprites->Add(1000 + i, 22 + i * 16, 136, 22 + (i + 1) * 16, 136 + 16, TEX_FONT);
     }
-
-    // ==========================================
-    // 3. NẠP TÀI NGUYÊN CHO INTRO SCENE
-    // ==========================================
-    textures->Add(30, L"assets/intro_items.png");
-    ID3D10ShaderResourceView* texIntro = textures->Get(30);
-    
-    // Giả định tọa độ cắt trên ảnh intro_items.png (kích thước gốc 1024x1024)
-    sprites->Add(2000, 8, 19, 648, 499, texIntro, 658, 803);    // 2000: Nền màn nhung đỏ
-    sprites->Add(2001, 8, 642, 308, 792, texIntro, 658, 803);  // 2001: Logo Super Mario
-    sprites->Add(2002, 411, 601, 611, 651, texIntro, 658, 803); // 2002: Chữ 1 Player / 2 Player
-    sprites->Add(2003, 388, 601, 409, 620, texIntro, 658, 803); // 2003: Con trỏ (Nấm)
 
     // Khởi tạo Intro
     introScene = new Intro();
@@ -333,6 +329,7 @@ void Cleanup()
     for (GameObject* obj : g_objectList) delete obj;
     g_objectList.clear();
     Game::GetInstance()->ReleaseDirectX();
+    Animations::GetInstance()->Clear();
 }
 
 #pragma endregion
