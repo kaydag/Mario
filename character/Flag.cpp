@@ -1,0 +1,32 @@
+﻿#include "Flag.h"
+#include "../animation/Animations.h"
+#
+
+Flag::Flag(float x, float y, float width, float height, bool isVisited)
+	: GameObject(x, y), isVisited(isVisited), width(width), height(height) {
+}
+
+void Flag::Render() {
+	Animation* ani = NULL;
+
+	if (isVisited)
+	{
+		ani = Animations::GetInstance()->Get(104); // flag đã chạm
+	}
+	else
+	{
+		ani = Animations::GetInstance()->Get(100); // flag bình thường
+	}
+
+	if (ani) ani->Render(x, y);
+}
+
+void Flag::GetBoundingBox(float& left, float& top, float& right, float& bottom)
+{
+	left = x;
+	top = y;
+	right = x + width;
+	bottom = y + height;
+}
+
+
