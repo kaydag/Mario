@@ -9,6 +9,8 @@
 class Mario : public GameObject
 {
 public:
+    bool isOnGround;
+    float ax;
     Mario(float x, float y);
     void GetBoundingBox(float& left, float& top, float& right, float& bottom);
     void Update(DWORD dt, vector<GameObject*>* coObjects);
