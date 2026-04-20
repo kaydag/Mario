@@ -1,19 +1,21 @@
 #include "Mario.h"
 #include "../gameplay/Brick.h"
+#include "../character/Flag.h"
 #include "../animation/Animations.h"
+#include "../physics/Collision.h"
 #include <algorithm>
 
 #define MARIO_JUMP_SPEED_Y 0.5f
 #define MARIO_GRAVITY -0.002f
 
-Mario::Mario(float x, float y) : GameObject(x, y) {}
+Mario::Mario(float x, float y, float width, float height) : GameObject(x, y), width(width), height(height) {}
 
 void Mario::GetBoundingBox(float& left, float& top, float& right, float& bottom)
 {
     left = x;
     top = y;
-    right = x + 42.0f;
-    bottom = y + 48.0f;
+    right = x + width;
+    bottom = y + height;
 }
 
 void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
@@ -100,4 +102,15 @@ void Mario::Render()
     }
 
     if (ani != NULL) ani->Render(x, y);
+}
+
+void Mario::OnCollision(GameObject* obj)
+{
+    if (Flag* flag = dynamic_cast<Flag*>(obj))
+    {
+        if (!flag->GetVisited())
+        {
+            flag->SetVisited();
+        }
+    }
 }

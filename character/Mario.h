@@ -8,9 +8,12 @@
 
 class Mario : public GameObject
 {
+private:
+	float width, height;
 public:
-    Mario(float x, float y);
+    Mario(float x, float y, float width, float height);
     void GetBoundingBox(float& left, float& top, float& right, float& bottom);
     void Update(DWORD dt, vector<GameObject*>* coObjects);
     void Render() override;
+	void OnCollision(GameObject* obj);
 };
