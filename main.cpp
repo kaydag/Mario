@@ -13,6 +13,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <time.h>
+#include <fstream>
 
 #pragma endregion
 
@@ -22,12 +23,16 @@
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
 #define FPS_LIMIT 100
+#define GRID_CELL_SIZE 64.0f
+#define MAX_CELL_ROW 50
+#define MAX_CELL_COL 200
 
 #pragma endregion
 
 #pragma region GlobalVariables/GameObjects/ID_Definitions
 
 std::vector<GameObject*> g_objectList;
+std::vector<GameObject*> grid[MAX_CELL_ROW][MAX_CELL_COL];
 
 bool g_showBBox = false;
 
@@ -53,6 +58,7 @@ enum TEXTURE_ID {
 #pragma region FunctionPrototypes
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+void LoadMap(LPCWSTR filePath);
 void LoadResources();
 void Update(DWORD dt);
 void Render();
@@ -166,9 +172,37 @@ void Update(DWORD dt)
     }
     else {
         HUD::GetInstance()->Update(dt);
-        for (GameObject* obj : g_objectList) {
-            obj->Update(dt, &g_objectList);
+        int soLanKiemTraVaCham = 0;
+        for (GameObject* obj : g_objectList)
+        {
+            if (obj->isStatic == true) {
+                obj->Update(dt, NULL);
+                continue;
+            }
+
+            int currentCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
+            int currentCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
+
+            std::vector<GameObject*> nearbyObjects;
+
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    int checkRow = currentCellY + i;
+                    int checkCol = currentCellX + j;
+
+                    if (checkRow >= 0 && checkRow < MAX_CELL_ROW && checkCol >= 0 && checkCol < MAX_CELL_COL) {
+                        for (GameObject* g : grid[checkRow][checkCol]) {
+                            nearbyObjects.push_back(g);
+                        }
+                    }
+                }
+            }
+            soLanKiemTraVaCham += nearbyObjects.size();
+            obj->Update(dt, &nearbyObjects);
         }
+        char debugStr[100];
+        sprintf_s(debugStr, "SO PHÉP TINH VA CHAM TRONG 1 FRAME: %d\n", soLanKiemTraVaCham);
+        OutputDebugStringA(debugStr);
     }
 }
 
@@ -180,38 +214,56 @@ void Render()
 
     if (dev)
     {
-        // BƯỚC 1: Xóa màn hình (Lệnh này phải chạy đầu tiên)
-        float bgColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // Mặc định đen cho Intro
+        float bgColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
         if (currentState == STATE_PLAYING) {
-            bgColor[0] = 0.2f; bgColor[1] = 0.2f; bgColor[2] = 0.2f; // Xám khi vào game
+            bgColor[0] = 0.2f; bgColor[1] = 0.2f; bgColor[2] = 0.2f;
         }
         dev->ClearRenderTargetView(game->GetRenderTargetView(), bgColor);
 
-        // BƯỚC 2: Thiết lập Blend State để vẽ được ảnh trong suốt (PNG)
         float blendFactor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
         dev->OMSetBlendState(game->GetBlendState(), blendFactor, 0xffffffff);
 
-        // BƯỚC 3: Bắt đầu vẽ Sprite
         game->GetSpriteHandler()->Begin(D3DX10_SPRITE_SORT_TEXTURE);
+
+        D3DXMATRIX matZoom;
 
         if (currentState == STATE_INTRO)
         {
-            // Vẽ các thành phần của Intro
+            D3DXMatrixScaling(&matZoom, 1.0f, 1.0f, 1.0f);
+            game->GetSpriteHandler()->SetViewTransform(&matZoom);
+
             if (introScene) introScene->Render();
         }
         else
         {
-            // Vẽ các đối tượng trong game (Mario, Quái...)
+            D3DXMatrixScaling(&matZoom, 2.0f, 2.0f, 1.0f);
+            game->GetSpriteHandler()->SetViewTransform(&matZoom);
+            GameObject* mario = g_objectList.empty() ? NULL : g_objectList[0];
+
             for (GameObject* obj : g_objectList)
             {
                 obj->Render();
-                if (g_showBBox) obj->RenderBoundingBox();
+                if (g_showBBox && mario != NULL)
+                {
+                    int marioCellX = (int)(mario->GetX() / GRID_CELL_SIZE);
+                    int marioCellY = (int)(mario->GetY() / GRID_CELL_SIZE);
+
+                    int objCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
+                    int objCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
+
+                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1)
+                    {
+                        obj->RenderBoundingBox();
+                    }
+                }
             }
-            // Vẽ HUD lên trên cùng
+            D3DXMATRIX matUI;
+            D3DXMatrixScaling(&matUI, 1.0f, 1.0f, 1.0f);
+            game->GetSpriteHandler()->SetViewTransform(&matUI);
+
             HUD::GetInstance()->Render();
         }
 
-        // BƯỚC 4: Kết thúc vẽ và đẩy lên màn hình
         game->GetSpriteHandler()->End();
         game->GetSwapChain()->Present(0, 0);
     }
@@ -232,6 +284,45 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+void LoadMap(LPCWSTR filePath)
+{
+    ifstream f;
+    f.open(filePath);
+
+    if (!f.is_open()) return;
+
+    int rows, cols;
+    f >> rows >> cols;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < cols; c++)
+        {
+            int tileID;
+            f >> tileID;
+
+            float realX = c * 16.0f;
+
+            float realY = ((rows - r - 1) * 16.0f) + 50.0f;
+
+
+            if (tileID == 1 || tileID == 2)
+            {
+                Brick* brick = new Brick(realX, realY);
+                g_objectList.push_back(brick);
+
+                int cellX = (int)(realX / GRID_CELL_SIZE);
+                int cellY = (int)(realY / GRID_CELL_SIZE);
+
+                if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
+                    grid[cellY][cellX].push_back(brick);
+                }
+            }
+        }
+    }
+    f.close();
+}
+
 void LoadResources()
 {
     Textures* textures = Textures::GetInstance();
@@ -243,34 +334,34 @@ void LoadResources()
     // 1. NẠP TÀI NGUYÊN
     // ==========================================
 
-    textures->Add(0, L"assets/mario.png");
-    textures->Add(1, L"assets/CommonObjects&Pipes.png");
-    textures->Add(20, L"assets/font.png");
-    textures->Add(30, L"assets/intro_items.png");
-    textures->Add(99, L"assets/bbox.png");
+    textures->Add(TEX_MARIO, L"assets/mario.png");
+    textures->Add(TEX_COMMON, L"assets/CommonObjects&Pipes.png");
+    textures->Add(TEX_FONT, L"assets/font.png");
+    textures->Add(TEX_INTRO, L"assets/intro_items.png");
+    textures->Add(TEX_BBOX, L"assets/bbox.png");
 
     // ==========================================
     // 2. CẮT SPRITES
     // ==========================================
 
     // Idle
-    sprites->Add(0, 628, 0, 676, 48, TEX_MARIO); // Phải
-    sprites->Add(1, 538, 0, 586, 48, TEX_MARIO); // Trái
+    sprites->Add(0, 211, 0, 223, 15, TEX_MARIO); // Phải
+    sprites->Add(1, 181, 0, 194, 15, TEX_MARIO); // Trái
     
     // Run
-    sprites->Add(2, 719, 0, 767, 48, TEX_MARIO);
-    sprites->Add(3, 809, 0, 857, 48, TEX_MARIO);
-    sprites->Add(4, 899, 0, 947, 48, TEX_MARIO);
-    sprites->Add(5, 446, 0, 494, 48, TEX_MARIO);
-    sprites->Add(6, 357, 0, 405, 48, TEX_MARIO);
-    sprites->Add(7, 267, 0, 315, 48, TEX_MARIO);
+    sprites->Add(2, 241, 0, 255, 14, TEX_MARIO);
+    sprites->Add(3, 272, 0, 284, 15, TEX_MARIO);
+    sprites->Add(4, 300, 0, 316, 15, TEX_MARIO);
+    sprites->Add(5, 150, 0, 164, 14, TEX_MARIO);
+    sprites->Add(6, 121, 0, 133, 15, TEX_MARIO);
+    sprites->Add(7, 89, 0, 105, 15, TEX_MARIO);
     
     // Jump
-    sprites->Add(8, 1077, 0, 1127, 50, TEX_MARIO);
-    sprites->Add(9, 87, 0, 137, 50, TEX_MARIO);
+    sprites->Add(8, 359, 0, 375, 15, TEX_MARIO);
+    sprites->Add(9, 29, 0, 45, 15, TEX_MARIO);
 
     //  Brick
-    sprites->Add(10, 357, 108, 404, 155, TEX_COMMON);
+    sprites->Add(10, 119, 36, 134, 51, TEX_COMMON);
 
     // Intro
     sprites->Add(2000, 8, 19, 648, 499, TEX_INTRO);    // 2000: Nền màn nhung đỏ
@@ -303,19 +394,14 @@ void LoadResources()
     // ==========================================
 
     // Khởi tạo Mario
-    Mario* mario = new Mario(WINDOW_WIDTH / 2.0f, 400.0f);
+    Mario* mario = new Mario(100.0f, 200.0f);
     g_objectList.push_back(mario);
 
-
-    // Khởi tạo platform gạch
-    for (int i = 0; i < 14; i++)
-    {
-        Brick* brick = new Brick(i * 48.0f, 50.0f);
-        g_objectList.push_back(brick);
-    }
+    // Khởi tạp map
+    LoadMap(L"assets/testmap.txt");
 
     // Cắt 10 số (0-9)
-    for (int i = 0; i < 10; i++) 
+    for (int i = 0; i < 10; i++)
     {
         sprites->Add(1000 + i, 22 + i * 16, 136, 22 + (i + 1) * 16, 136 + 16, TEX_FONT);
     }

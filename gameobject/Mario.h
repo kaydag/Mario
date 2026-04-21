@@ -12,6 +12,8 @@ private:
 	float width, height;
     int lives;
 public:
+    bool isOnGround;
+    float ax;
     Mario(float x, float y, float width, float height);
     void GetBoundingBox(float& left, float& top, float& right, float& bottom);
     void Update(DWORD dt, vector<GameObject*>* coObjects);
