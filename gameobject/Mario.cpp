@@ -1,6 +1,11 @@
 #include "Mario.h"
 #include "../gameplay/Brick.h"
+#include "../character/Flag.h"
+#include "../character/Enemy.h"
+#include "../gameplay/Buff.h"
 #include "../animation/Animations.h"
+#include "../gameplay/GameManager.h"
+#include "../physics/Collision.h"
 #include <algorithm>
 
 #define MARIO_JUMP_SPEED_Y      0.27f 
@@ -9,7 +14,7 @@
 #define MARIO_ACCEL_WALK_X		0.0005f 
 #define MARIO_FRICTION			0.0004f
 
-Mario::Mario(float x, float y) : GameObject(x, y)
+Mario::Mario(float x, float y, float width, float height) : GameObject(x, y), width(width), height(height)
 {
     isOnGround = false;
     ax = 0.0f;
@@ -19,8 +24,8 @@ void Mario::GetBoundingBox(float& left, float& top, float& right, float& bottom)
 {
     left = x;
     top = y;
-    right = x + 13.0f;
-    bottom = y + 16.0f;
+    right = x + width;
+    bottom = y + height;
 }
 
 void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
@@ -138,6 +143,13 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
     {
         isOnGround = false;
     }
+    
+    if (IsDied())
+    {
+        GameManager::GetInstance()->SetGameOver(true);
+        std::printf("game over\n");
+	}
+
 }
 
 void Mario::Render()
@@ -164,4 +176,30 @@ void Mario::Render()
     }
 
     if (ani != NULL) ani->Render(x, y);
+}
+
+void Mario::OnCollision(GameObject* obj)
+{
+    if (Flag* flag = dynamic_cast<Flag*>(obj))
+    {
+        if (!flag->GetVisited())
+        {
+            flag->SetVisited();
+        }
+    }
+
+    else if (Enemy* enemy = dynamic_cast<Enemy*>(obj))
+    {
+        if (!enemy->IsDied())
+        {
+            lives--;
+			IsDied();
+        }
+    }
+
+    else if (Buff* buff = dynamic_cast<Buff*>(obj))
+    {
+        lives++;
+		//Destroy buff after collecting
+    }
 }
