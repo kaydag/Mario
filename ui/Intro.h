@@ -18,6 +18,10 @@ private:
     float logoSpeed;
     bool isLogoDown;
 
+    // Các biến cho hiệu ứng nhấp nháy số 3
+    DWORD timerNum3;
+    int stateNum3;
+
 public:
     Intro();
     void LoadSprites();
