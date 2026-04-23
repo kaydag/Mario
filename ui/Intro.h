@@ -12,10 +12,15 @@ private:
     float curtainY;
     float curtainSpeed;
     bool isCurtainUp;
-    float curtainHeight; // Ngưỡng để ẩn màn nhung
+    float curtainHeight;
+
+    float logoY;
+    float logoSpeed;
+    bool isLogoDown;
 
 public:
     Intro();
+    void LoadSprites();
     void Update(DWORD dt);
     void Render();
     bool IsDone() { return isDone; }

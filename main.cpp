@@ -363,11 +363,9 @@ void LoadResources()
     //  Brick
     sprites->Add(10, 119, 36, 134, 51, TEX_COMMON);
 
-    // Intro
-    sprites->Add(2000, 8, 19, 648, 499, TEX_INTRO);    // 2000: Nền màn nhung đỏ
-    sprites->Add(2001, 8, 642, 308, 792, TEX_INTRO);  // 2001: Logo Super Mario
-    sprites->Add(2002, 411, 601, 611, 651, TEX_INTRO); // 2002: Chữ 1 Player / 2 Player
-    sprites->Add(2003, 388, 601, 409, 620, TEX_INTRO); // 2003: Con trỏ (Nấm)
+    //Intro
+    Intro* intro = new Intro();
+    intro->LoadSprites();
 
     // Bounding Box
     sprites->Add(99999, 0, 0, 9, 9, 99);
