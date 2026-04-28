@@ -65,7 +65,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ui\HUB.cpp">
+    <ClCompile Include="ui\HUD.cpp">
       <Filter>Source Files\ui</Filter>
     </ClCompile>
     <ClCompile Include="ui\Intro.cpp">
@@ -115,7 +115,7 @@
     <ClInclude Include="render\Textures.h">
       <Filter>Source Files\render</Filter>
     </ClInclude>
-    <ClInclude Include="ui\HUB.h">
+    <ClInclude Include="ui\HUD.h">
       <Filter>Source Files\ui</Filter>
     </ClInclude>
     <ClInclude Include="ui\Intro.h">

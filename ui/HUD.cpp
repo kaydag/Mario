@@ -1,4 +1,6 @@
-#include "../ui/HUB.h"
+#include "HUD.h"
+
+#define TEX_HUD 20
 
 HUD* HUD::__instance = NULL;
 
@@ -7,6 +9,13 @@ HUD::HUD()
     score = 0;
     coins = 0;
     time = 300;
+}
+
+void HUD::LoadSprites()
+{
+    Sprites* sprites = Sprites::GetInstance();
+
+	sprites->Add(3000, 0, 0, 640, 95, TEX_HUD); //3000: Nền HUD
 }
 
 HUD* HUD::GetInstance()
@@ -42,7 +51,10 @@ void HUD::DrawNumber(int number, float x, float y)
 
 void HUD::Render()
 {
+    Sprites* sprites = Sprites::GetInstance();
     float yPos = 450.0f;
+
+    if (sprites->Get(3000)) sprites->Get(3000)->Draw(0.0f, 0.0f);
 
     DrawNumber(score, 20.0f, yPos);   // Điểm
     DrawNumber(coins, 300.0f, yPos);  // Xu

@@ -17,6 +17,7 @@ public:
     HUD();
     static HUD* GetInstance();
     void Update(DWORD dt);
+    void LoadSprites();
     void Render();
 
     void SetScore(int s) { score = s; }

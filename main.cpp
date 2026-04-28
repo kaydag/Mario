@@ -6,7 +6,7 @@
 #include "render/Textures.h"
 #include "gameobject/Mario.h"
 #include "gameobject/Brick.h"
-#include "ui/HUB.h"
+#include "ui/HUD.h"
 #include "ui/Intro.h"
 
 #include <string.h>
@@ -48,7 +48,7 @@ Intro* introScene = NULL;
 enum TEXTURE_ID {
     TEX_MARIO = 0,
     TEX_COMMON = 1,
-    TEX_FONT = 20,
+    TEX_HUD = 20,
     TEX_INTRO = 30,
     TEX_BBOX = 99
 };
@@ -336,7 +336,7 @@ void LoadResources()
 
     textures->Add(TEX_MARIO, L"assets/mario.png");
     textures->Add(TEX_COMMON, L"assets/CommonObjects&Pipes.png");
-    textures->Add(TEX_FONT, L"assets/font.png");
+    textures->Add(TEX_HUD, L"assets/hud.png");
     textures->Add(TEX_INTRO, L"assets/intro_items.png");
     textures->Add(TEX_BBOX, L"assets/bbox.png");
 
@@ -362,10 +362,6 @@ void LoadResources()
 
     //  Brick
     sprites->Add(10, 119, 36, 134, 51, TEX_COMMON);
-
-    //Intro
-    Intro* intro = new Intro();
-    intro->LoadSprites();
 
     // Bounding Box
     sprites->Add(99999, 0, 0, 9, 9, 99);
@@ -401,9 +397,15 @@ void LoadResources()
     // Cắt 10 số (0-9)
     for (int i = 0; i < 10; i++)
     {
-        sprites->Add(1000 + i, 22 + i * 16, 136, 22 + (i + 1) * 16, 136 + 16, TEX_FONT);
+        sprites->Add(1000 + i, 22 + i * 16, 136, 22 + (i + 1) * 16, 136 + 16, TEX_HUD);
     }
 
+    //HUD
+    HUD::GetInstance()->LoadSprites();
+
+    //Intro
+    Intro* intro = new Intro();
+    intro->LoadSprites();
     // Khởi tạo Intro
     introScene = new Intro();
 }
