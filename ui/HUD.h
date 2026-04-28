@@ -30,4 +30,6 @@ public:
     void DrawScore(int score);
     void DrawTime(int time);
     void DrawPMeter(int powerLevel);
+
+    void SetPMeter(int level) { currentPMeter = level; }
 };
