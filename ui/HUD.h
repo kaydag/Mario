@@ -7,24 +7,23 @@ class HUD
 {
 private:
     static HUD* __instance;
-    int score;
-    int coins;
-    int time;
 
-    void DrawNumber(int number, float x, float y);
+    // Thêm các biến đếm thời gian
+    int time;
+    DWORD timeAccumulator;
+
+    void DrawString(std::string text, float x, float y);
 
 public:
     HUD();
     static HUD* GetInstance();
-    void Update(DWORD dt);
     void LoadSprites();
+
+    void Update(DWORD dt);
     void Render();
 
-    void SetScore(int s) { score = s; }
-    void AddScore(int s) { score += s; }
-
-    void SetCoins(int c) { coins = c; }
-    void AddCoin() { coins++; }
-
-    void SetTime(int t) { time = t; }
+    void DrawCoins(int coins);
+    void DrawScore(int score);
+    void DrawTime(int time);
+    void DrawPMeter(int powerLevel);
 };
