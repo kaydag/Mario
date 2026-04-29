@@ -14,6 +14,12 @@
 #define HUD_ICON_X 52.0f 
 #define HUD_ICON_Y 19.0f 
 
+// Khai báo tọa độ vẽ 3 ô thẻ bài (Bạn tự căn chỉnh lại cho khớp khung vuông)
+#define HUD_CARD_1_X 426.0f
+#define HUD_CARD_2_X 482.0f
+#define HUD_CARD_3_X 538.0f
+#define HUD_CARD_Y   14.0f
+
 HUD* HUD::__instance = NULL;
 
 HUD::HUD()
@@ -25,9 +31,14 @@ HUD::HUD()
     isPMeterBlinkVisible = true;
 
     currentPMeter = 0;
-    currentPlayer = 1; // Mặc định ban đầu là Player 1
-    currentScore = 0;  // Khởi tạo điểm = 0
-    currentCoins = 0;  // Khởi tạo xu = 0
+    currentPlayer = 1;
+    currentScore = 0;
+    currentCoins = 0;
+
+    // Ban đầu 3 ô thẻ đều trống rỗng
+    cards[0] = 0;
+    cards[1] = 0;
+    cards[2] = 0;
 }
 
 HUD* HUD::GetInstance()
@@ -56,14 +67,18 @@ void HUD::LoadSprites()
     sprites->Add(3010, 932, 76, 951, 92, TEX_HUD); // Mũi tên sáng
     sprites->Add(3011, 953, 76, 988, 92, TEX_HUD); // Chữ P sáng
 
-    //Sprite cho chữ M và L
+    // Sprite cho chữ M và L
     sprites->Add(3012, 601, 86, 639, 102, TEX_HUD); // 3012: Chữ M
     sprites->Add(3013, 601, 103, 639, 119, TEX_HUD); // 3013: Chữ L
+
+    // Sprite cho 3 Thẻ bài (Bạn điền tọa độ cắt ảnh nhé)
+    sprites->Add(3014, 1025, 83, 1068, 130, TEX_HUD); // 3014: Nấm
+    sprites->Add(3015, 1081, 83, 1124, 130, TEX_HUD); // 3015: Hoa
+    sprites->Add(3016, 1137, 83, 1180, 130, TEX_HUD); // 3016: Sao
 }
 
 void HUD::Update(DWORD dt)
 {
-    // 1. Cập nhật đếm ngược thời gian
     if (time > 0)
     {
         timeAccumulator += dt;
@@ -74,12 +89,40 @@ void HUD::Update(DWORD dt)
         }
     }
 
-    // 2. Cập nhật nhấp nháy chữ P (đổi trạng thái mỗi 150ms)
     pMeterBlinkTime += dt;
     if (pMeterBlinkTime >= 150)
     {
         isPMeterBlinkVisible = !isPMeterBlinkVisible;
         pMeterBlinkTime = 0;
+    }
+
+    // ==========================================
+    // CODE TEST: TỰ ĐỘNG THÊM THẺ BÀI RANDOM MỖI 2 GIÂY
+    // ==========================================
+    static DWORD testCardTimer = 0;
+    static int testCardStep = 0;
+
+    testCardTimer += dt;
+    if (testCardTimer >= 2000) // Mỗi 2000ms (2 giây)
+    {
+        testCardStep++;
+
+        if (testCardStep >= 1 && testCardStep <= 3)
+        {
+            // Random ra số 1, 2 hoặc 3
+            int randomItem = (rand() % 3) + 1;
+            cards[testCardStep - 1] = randomItem; // Gán item vào ô tương ứng (0, 1, 2)
+        }
+        else if (testCardStep == 4)
+        {
+            // Reset xóa sạch thẻ
+            cards[0] = 0;
+            cards[1] = 0;
+            cards[2] = 0;
+            testCardStep = 0; // Bắt đầu lại chu trình
+        }
+
+        testCardTimer = 0; // Reset đồng hồ đếm
     }
 }
 
@@ -89,15 +132,14 @@ void HUD::Render()
 
     if (sprites->Get(3000)) sprites->Get(3000)->Draw(0.0f, 0.0f);
 
-    // Vẽ bằng các biến lưu trữ thay vì hardcode số 0
     DrawScore(currentScore);
     DrawCoins(currentCoins);
     DrawTime(time);
-
     DrawPMeter(currentPMeter);
-
-    // Gọi hàm vẽ Icon M/L
     DrawPlayerIcon(currentPlayer);
+
+    // Gọi hàm vẽ 3 thẻ bài
+    DrawCards();
 }
 
 void HUD::DrawString(std::string text, float x, float y)
@@ -149,9 +191,8 @@ void HUD::DrawPMeter(int powerLevel)
 {
     Sprites* sprites = Sprites::GetInstance();
     float currentX = HUD_PMETER_X;
-    float arrowWidth = 19.0f; // Kích thước mũi tên mới
+    float arrowWidth = 19.0f;
 
-    // 1. Vẽ 6 mũi tên
     for (int i = 0; i < 6; i++)
     {
         if (powerLevel > i)
@@ -161,12 +202,10 @@ void HUD::DrawPMeter(int powerLevel)
         currentX += arrowWidth;
     }
 
-    // 2. Vẽ chữ P
-    currentX += 1.0f;  // chữ P cách mũi tên 1px để đẹp hơn
+    currentX += 1.0f;
 
     if (powerLevel >= 7)
     {
-        // Nhấp nháy: Chỉ vẽ đè sprite chữ P màu trắng khi trạng thái bật
         if (isPMeterBlinkVisible)
         {
             if (sprites->Get(3011)) sprites->Get(3011)->Draw(currentX, HUD_PMETER_Y);
@@ -174,17 +213,37 @@ void HUD::DrawPMeter(int powerLevel)
     }
 }
 
-// Hàm mới để vẽ Icon M hoặc L
 void HUD::DrawPlayerIcon(int player)
 {
     Sprites* sprites = Sprites::GetInstance();
 
-    if (player == 1) // Vẽ chữ M
+    if (player == 1)
     {
         if (sprites->Get(3012)) sprites->Get(3012)->Draw(HUD_ICON_X, HUD_ICON_Y);
     }
-    else if (player == 2) // Vẽ chữ L
+    else if (player == 2)
     {
         if (sprites->Get(3013)) sprites->Get(3013)->Draw(HUD_ICON_X, HUD_ICON_Y);
+    }
+}
+
+void HUD::DrawCards()
+{
+    Sprites* sprites = Sprites::GetInstance();
+    float cardX[3] = { HUD_CARD_1_X, HUD_CARD_2_X, HUD_CARD_3_X };
+
+    for (int i = 0; i < 3; i++)
+    {
+        int spriteId = 0;
+
+        if (cards[i] == 1) spriteId = 3014;      // Nấm
+        else if (cards[i] == 2) spriteId = 3015; // Hoa
+        else if (cards[i] == 3) spriteId = 3016; // Sao
+
+        // Nếu có ID hợp lệ thì vẽ ra ô tương ứng
+        if (spriteId != 0 && sprites->Get(spriteId))
+        {
+            sprites->Get(spriteId)->Draw(cardX[i], HUD_CARD_Y);
+        }
     }
 }
