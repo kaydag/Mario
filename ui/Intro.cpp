@@ -1,6 +1,10 @@
 #include "Intro.h"
+#include "HUD.h"
 
 #define TEX_INTRO 30
+
+
+
 
 void Intro::LoadSprites()
 {
@@ -77,10 +81,12 @@ void Intro::Update(DWORD dt)
         if (GetAsyncKeyState(VK_UP) & 0x8000)
         {
             currentOption = 1;
+			HUD::GetInstance()->SetPlayer(1); // Cập nhật lựa chọn Player 1 cho HUD
         }
         else if (GetAsyncKeyState(VK_DOWN) & 0x8000)
         {
             currentOption = 2;
+			HUD::GetInstance()->SetPlayer(2); // Cập nhật lựa chọn Player 2 cho HUD
         }
 
         if ((GetAsyncKeyState(VK_RETURN) & 0x8000) || (GetAsyncKeyState(VK_SPACE) & 0x8000))

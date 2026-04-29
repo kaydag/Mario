@@ -10,6 +10,10 @@
 #define HUD_PMETER_X 165.0f 
 #define HUD_PMETER_Y 38.0f
 
+// Khai báo tọa độ vẽ Icon M/L
+#define HUD_ICON_X 52.0f 
+#define HUD_ICON_Y 19.0f 
+
 HUD* HUD::__instance = NULL;
 
 HUD::HUD()
@@ -21,6 +25,9 @@ HUD::HUD()
     isPMeterBlinkVisible = true;
 
     currentPMeter = 0;
+    currentPlayer = 1; // Mặc định ban đầu là Player 1
+    currentScore = 0;  // Khởi tạo điểm = 0
+    currentCoins = 0;  // Khởi tạo xu = 0
 }
 
 HUD* HUD::GetInstance()
@@ -48,6 +55,10 @@ void HUD::LoadSprites()
 
     sprites->Add(3010, 932, 76, 951, 92, TEX_HUD); // Mũi tên sáng
     sprites->Add(3011, 953, 76, 988, 92, TEX_HUD); // Chữ P sáng
+
+    //Sprite cho chữ M và L
+    sprites->Add(3012, 601, 86, 639, 102, TEX_HUD); // 3012: Chữ M
+    sprites->Add(3013, 601, 103, 639, 119, TEX_HUD); // 3013: Chữ L
 }
 
 void HUD::Update(DWORD dt)
@@ -78,12 +89,15 @@ void HUD::Render()
 
     if (sprites->Get(3000)) sprites->Get(3000)->Draw(0.0f, 0.0f);
 
-    DrawScore(0);
-    DrawCoins(0);
+    // Vẽ bằng các biến lưu trữ thay vì hardcode số 0
+    DrawScore(currentScore);
+    DrawCoins(currentCoins);
     DrawTime(time);
 
     DrawPMeter(currentPMeter);
 
+    // Gọi hàm vẽ Icon M/L
+    DrawPlayerIcon(currentPlayer);
 }
 
 void HUD::DrawString(std::string text, float x, float y)
@@ -148,8 +162,7 @@ void HUD::DrawPMeter(int powerLevel)
     }
 
     // 2. Vẽ chữ P
-	currentX += 1.0f;  // chữ P cách mũi tên 1px để đẹp hơn
-
+    currentX += 1.0f;  // chữ P cách mũi tên 1px để đẹp hơn
 
     if (powerLevel >= 7)
     {
@@ -158,5 +171,20 @@ void HUD::DrawPMeter(int powerLevel)
         {
             if (sprites->Get(3011)) sprites->Get(3011)->Draw(currentX, HUD_PMETER_Y);
         }
+    }
+}
+
+// Hàm mới để vẽ Icon M hoặc L
+void HUD::DrawPlayerIcon(int player)
+{
+    Sprites* sprites = Sprites::GetInstance();
+
+    if (player == 1) // Vẽ chữ M
+    {
+        if (sprites->Get(3012)) sprites->Get(3012)->Draw(HUD_ICON_X, HUD_ICON_Y);
+    }
+    else if (player == 2) // Vẽ chữ L
+    {
+        if (sprites->Get(3013)) sprites->Get(3013)->Draw(HUD_ICON_X, HUD_ICON_Y);
     }
 }

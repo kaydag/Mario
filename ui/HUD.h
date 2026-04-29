@@ -15,6 +15,9 @@ private:
     bool isPMeterBlinkVisible;
 
     int currentPMeter;
+    int currentPlayer;
+    int currentScore; // Thêm biến lưu điểm
+    int currentCoins; // Thêm biến lưu xu
 
     void DrawString(std::string text, float x, float y);
 
@@ -30,6 +33,11 @@ public:
     void DrawScore(int score);
     void DrawTime(int time);
     void DrawPMeter(int powerLevel);
+    void DrawPlayerIcon(int player);
 
+    // Các hàm để bên logic truyền dữ liệu vào
     void SetPMeter(int level) { currentPMeter = level; }
+    void SetPlayer(int player) { currentPlayer = player; }
+    void SetScore(int score) { currentScore = score; }
+    void SetCoins(int coins) { currentCoins = coins; }
 };
