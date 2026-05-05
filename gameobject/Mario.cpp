@@ -146,14 +146,24 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
 
             if (t < 1.0f && temp_ny != 0)
             {
-                // 1. ĐỤNG GẠCH (Đứng lại hoặc cản nhảy)
+                // 1. ĐỤNG GẠCH (Cản cả trên lẫn dưới)
                 if (dynamic_cast<Brick*>(e)) {
                     if (t < min_ty) {
                         min_ty = t;
                         ny_col = temp_ny;
                     }
                 }
-                // 2. ĐỤNG QUÁI VẬT TRỤC DỌC
+
+                // 2. ĐỤNG NỀN TẢNG 1 CHIỀU (Chỉ cản khi rơi từ trên xuống)
+                else if (dynamic_cast<Platform*>(e)) {
+                    if (temp_ny == 1) {
+                        if (t < min_ty) {
+                            min_ty = t;
+                            ny_col = temp_ny;
+                        }
+                    }
+                }
+                // 3. ĐỤNG QUÁI VẬT TRỤC DỌC
                 else if (Enemy* enemy = dynamic_cast<Enemy*>(e)) {
                     if (!enemy->IsDied()) {
                         if (temp_ny == -1) {

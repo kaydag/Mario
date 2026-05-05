@@ -6,6 +6,7 @@
 #include "render/Textures.h"
 #include "gameobject/Mario.h"
 #include "gameobject/Brick.h"
+#include "gameobject/Platform.h"
 #include "ui/HUD.h"
 #include "ui/Intro.h"
 #include "audio/AudioManager.h"
@@ -237,22 +238,27 @@ void Render()
             game->GetSpriteHandler()->SetViewTransform(&matZoom);
             GameObject* mario = g_objectList.empty() ? NULL : g_objectList[0];
 
-            for (GameObject* obj : g_objectList)
+            for (size_t i = 1; i < g_objectList.size(); i++)
             {
+                GameObject* obj = g_objectList[i];
                 obj->Render();
+
                 if (g_showBBox && mario != NULL)
                 {
                     int marioCellX = (int)(mario->GetX() / GRID_CELL_SIZE);
                     int marioCellY = (int)(mario->GetY() / GRID_CELL_SIZE);
-
                     int objCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
                     int objCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
 
-                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1)
-                    {
+                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1) {
                         obj->RenderBoundingBox();
                     }
                 }
+            }
+
+            if (mario != NULL) {
+                mario->Render();
+                if (g_showBBox) mario->RenderBoundingBox();
             }
             D3DXMATRIX matUI;
             D3DXMatrixScaling(&matUI, 1.0f, 1.0f, 1.0f);
@@ -313,6 +319,18 @@ void LoadMap(LPCWSTR filePath)
 
                 if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
                     grid[cellY][cellX].push_back(brick);
+                }
+            }
+            else if (tileID == 3)
+            {
+                Platform* platform = new Platform(realX, realY, 15.0f, 15.0f, 201);
+                g_objectList.push_back(platform);
+
+                int cellX = (int)(realX / GRID_CELL_SIZE);
+                int cellY = (int)(realY / GRID_CELL_SIZE);
+
+                if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
+                    grid[cellY][cellX].push_back(platform);
                 }
             }
         }
@@ -396,7 +414,7 @@ void LoadResources()
     g_objectList.push_back(mario);
 
     // Khởi tạp map
-    LoadMap(L"assets/testmap.txt");
+    LoadMap(L"levels/testmap.txt");
 
     // Cắt 10 số (0-9)
     for (int i = 0; i < 10; i++)

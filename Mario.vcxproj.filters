@@ -98,6 +98,9 @@
     <ClCompile Include="audio\AudioManager.cpp">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
+    <ClCompile Include="gameobject\Platform.cpp">
+      <Filter>Source Files\gameobject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="animation\Animation.h">
@@ -159,6 +162,9 @@
     </ClInclude>
     <ClInclude Include="audio\miniaudio.h">
       <Filter>Source Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="gameobject\Platform.h">
+      <Filter>Source Files\gameobject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -141,6 +141,7 @@
     <ClCompile Include="gameobject\Enemy.cpp" />
     <ClCompile Include="gameobject\Flag.cpp" />
     <ClCompile Include="gameobject\Mario.cpp" />
+    <ClCompile Include="gameobject\Platform.cpp" />
     <ClCompile Include="gameplay\GameManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="physics\Collision.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="gameobject\Enemy.h" />
     <ClInclude Include="gameobject\Flag.h" />
     <ClInclude Include="gameobject\Mario.h" />
+    <ClInclude Include="gameobject\Platform.h" />
     <ClInclude Include="gameplay\GameManager.h" />
     <ClInclude Include="input\KeyEventHandler.h" />
     <ClInclude Include="physics\Collision.h" />
