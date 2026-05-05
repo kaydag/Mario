@@ -65,7 +65,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ui\HUB.cpp">
+    <ClCompile Include="ui\HUD.cpp">
       <Filter>Source Files\ui</Filter>
     </ClCompile>
     <ClCompile Include="ui\Intro.cpp">
@@ -95,6 +95,9 @@
     <ClCompile Include="gameplay\GameManager.cpp">
       <Filter>Source Files\gameplay</Filter>
     </ClCompile>
+    <ClCompile Include="audio\AudioManager.cpp">
+      <Filter>Source Files\audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="animation\Animation.h">
@@ -115,7 +118,7 @@
     <ClInclude Include="render\Textures.h">
       <Filter>Source Files\render</Filter>
     </ClInclude>
-    <ClInclude Include="ui\HUB.h">
+    <ClInclude Include="ui\HUD.h">
       <Filter>Source Files\ui</Filter>
     </ClInclude>
     <ClInclude Include="ui\Intro.h">
@@ -150,6 +153,12 @@
     </ClInclude>
     <ClInclude Include="physics\Collision.h">
       <Filter>Source Files\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\AudioManager.h">
+      <Filter>Source Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\miniaudio.h">
+      <Filter>Source Files\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
