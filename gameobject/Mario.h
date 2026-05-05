@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/GameObject.h"
+#include "../gameobject/Platform.h"
 
 #define MARIO_WIDTH 13.0f  
 #define MARIO_HEIGHT 16.0f

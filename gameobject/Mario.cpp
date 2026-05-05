@@ -33,6 +33,9 @@ void Mario::GetBoundingBox(float& left, float& top, float& right, float& bottom)
 
 void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
 {
+    // ============================================
+    // PHẦN VẬT LÝ DI CHUYỂN
+    // ============================================
     if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
         ax = MARIO_ACCEL_WALK_X;
         nx = 1;
@@ -70,8 +73,9 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
     float dx = vx * dt;
     float dy = vy * dt;
 
+
     // ============================================
-    // QUÉT VA CHẠM TRỤC X
+    // QUÉT VA CHẠM TRỤC X (ĐI NGANG)
     // ============================================
     float min_tx = 1.0f;
     float nx_col = 0;
@@ -83,21 +87,34 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
         GameObject* e = coObjects->at(i);
         if (e == this) continue;
 
-        if (dynamic_cast<Brick*>(e))
+        float sl, st, sr, sb;
+        e->GetBoundingBox(sl, st, sr, sb);
+
+        if (mb > st && mt < sb)
         {
-            float sl, st, sr, sb;
-            e->GetBoundingBox(sl, st, sr, sb);
+            float t, temp_nx, temp_ny;
+            Collision::GetInstance()->SweptAABB(ml, mt, mr, mb, dx, 0.0f, sl, st, sr, sb, t, temp_nx, temp_ny);
 
-            if (mb > st && mt < sb)
+            if (t < 1.0f && temp_nx != 0)
             {
-                float t, temp_nx, temp_ny;
+                // 1. ĐỤNG GẠCH (Cản đường lại)
+                if (dynamic_cast<Brick*>(e)) {
+                    if (t < min_tx) {
+                        min_tx = t;
+                        nx_col = temp_nx;
+                    }
+                }
+                // 2. ĐỤNG QUÁI VẬT (Bị thương)
+                else if (Enemy* enemy = dynamic_cast<Enemy*>(e)) {
+                   
+                }
+                // 3. ĐỤNG BUFF
+                else if (Buff* buff = dynamic_cast<Buff*>(e)) {
 
-                Collision::GetInstance()->SweptAABB(ml, mt, mr, mb, dx, 0.0f, sl, st, sr, sb, t, temp_nx, temp_ny);
+                }
+                // 4. CHẠM CỜ
+                else if (Flag* flag = dynamic_cast<Flag*>(e)) {
 
-                if (t < min_tx && temp_nx != 0)
-                {
-                    min_tx = t;
-                    nx_col = temp_nx;
                 }
             }
         }
@@ -108,7 +125,7 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
 
 
     // ============================================
-    // QUÉT VA CHẠM TRỤC Y
+    // QUÉT VA CHẠM TRỤC Y (RƠI / NHẢY)
     // ============================================
     GetBoundingBox(ml, mt, mr, mb);
     float min_ty = 1.0f;
@@ -119,21 +136,44 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
         GameObject* e = coObjects->at(i);
         if (e == this) continue;
 
-        if (dynamic_cast<Brick*>(e))
+        float sl, st, sr, sb;
+        e->GetBoundingBox(sl, st, sr, sb);
+
+        if (mr > sl && ml < sr)
         {
-            float sl, st, sr, sb;
-            e->GetBoundingBox(sl, st, sr, sb);
+            float t, temp_nx, temp_ny;
+            Collision::GetInstance()->SweptAABB(ml, mt, mr, mb, 0.0f, dy, sl, st, sr, sb, t, temp_nx, temp_ny);
 
-            if (mr > sl && ml < sr)
+            if (t < 1.0f && temp_ny != 0)
             {
-                float t, temp_nx, temp_ny;
+                // 1. ĐỤNG GẠCH (Cản cả trên lẫn dưới)
+                if (dynamic_cast<Brick*>(e)) {
+                    if (t < min_ty) {
+                        min_ty = t;
+                        ny_col = temp_ny;
+                    }
+                }
 
-                Collision::GetInstance()->SweptAABB(ml, mt, mr, mb, 0.0f, dy, sl, st, sr, sb, t, temp_nx, temp_ny);
-
-                if (t < min_ty && temp_ny != 0)
-                {
-                    min_ty = t;
-                    ny_col = temp_ny;
+                // 2. ĐỤNG NỀN TẢNG 1 CHIỀU (Chỉ cản khi rơi từ trên xuống)
+                else if (dynamic_cast<Platform*>(e)) {
+                    if (temp_ny == 1) {
+                        if (t < min_ty) {
+                            min_ty = t;
+                            ny_col = temp_ny;
+                        }
+                    }
+                }
+                // 3. ĐỤNG QUÁI VẬT TRỤC DỌC
+                else if (Enemy* enemy = dynamic_cast<Enemy*>(e)) {
+                    if (!enemy->IsDied()) {
+                        if (temp_ny == -1) {
+                            // Rơi xuống đụng enemy
+                            vy = -MARIO_JUMP_SPEED_Y; // Nảy nhẹ lên
+                        }
+                        else if (temp_ny == 1) {
+                            // Nhảy lên đụng enemy
+                        }
+                    }
                 }
             }
         }
@@ -151,6 +191,9 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
         isOnGround = false;
     }
 
+    // ============================================
+    // XỬ LÝ GAME OVER
+    // ============================================
     if (IsDied())
     {
         GameManager::GetInstance()->SetGameOver(true);
@@ -161,6 +204,7 @@ void Mario::Update(DWORD dt, vector<GameObject*>* coObjects)
 void Mario::Render()
 {
     Animation* ani = NULL;
+    bool isSkidding = (vx > 0 && nx < 0) || (vx < 0 && nx > 0);
 
     if (!isOnGround)
     {
@@ -169,7 +213,12 @@ void Mario::Render()
     }
     else
     {
-        if (vx == 0.0f)
+        if (isSkidding)
+        {
+            if (nx > 0) ani = Animations::GetInstance()->Get(107);
+            else ani = Animations::GetInstance()->Get(106);
+        }
+        else if (vx == 0.0f)
         {
             if (nx > 0) ani = Animations::GetInstance()->Get(100);
             else ani = Animations::GetInstance()->Get(101);

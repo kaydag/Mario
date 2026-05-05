@@ -6,6 +6,7 @@
 #include "render/Textures.h"
 #include "gameobject/Mario.h"
 #include "gameobject/Brick.h"
+#include "gameobject/Platform.h"
 #include "ui/HUD.h"
 #include "ui/Intro.h"
 #include "audio/AudioManager.h"
@@ -174,7 +175,6 @@ void Update(DWORD dt)
     }
     else {
         HUD::GetInstance()->Update(dt);
-        int soLanKiemTraVaCham = 0;
         for (GameObject* obj : g_objectList)
         {
             if (obj->isStatic == true) {
@@ -199,12 +199,8 @@ void Update(DWORD dt)
                     }
                 }
             }
-            soLanKiemTraVaCham += nearbyObjects.size();
             obj->Update(dt, &nearbyObjects);
         }
-        char debugStr[100];
-        sprintf_s(debugStr, "SO PHÉP TINH VA CHAM TRONG 1 FRAME: %d\n", soLanKiemTraVaCham);
-        OutputDebugStringA(debugStr);
     }
 }
 
@@ -242,22 +238,27 @@ void Render()
             game->GetSpriteHandler()->SetViewTransform(&matZoom);
             GameObject* mario = g_objectList.empty() ? NULL : g_objectList[0];
 
-            for (GameObject* obj : g_objectList)
+            for (size_t i = 1; i < g_objectList.size(); i++)
             {
+                GameObject* obj = g_objectList[i];
                 obj->Render();
+
                 if (g_showBBox && mario != NULL)
                 {
                     int marioCellX = (int)(mario->GetX() / GRID_CELL_SIZE);
                     int marioCellY = (int)(mario->GetY() / GRID_CELL_SIZE);
-
                     int objCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
                     int objCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
 
-                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1)
-                    {
+                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1) {
                         obj->RenderBoundingBox();
                     }
                 }
+            }
+
+            if (mario != NULL) {
+                mario->Render();
+                if (g_showBBox) mario->RenderBoundingBox();
             }
             D3DXMATRIX matUI;
             D3DXMatrixScaling(&matUI, 1.0f, 1.0f, 1.0f);
@@ -303,9 +304,9 @@ void LoadMap(LPCWSTR filePath)
             int tileID;
             f >> tileID;
 
-            float realX = c * 16.0f;
+            float realX = c * 15.0f;
 
-            float realY = ((rows - r - 1) * 16.0f) + 50.0f;
+            float realY = ((rows - r - 1) * 15.0f) + 50.0f;
 
 
             if (tileID == 1 || tileID == 2)
@@ -318,6 +319,18 @@ void LoadMap(LPCWSTR filePath)
 
                 if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
                     grid[cellY][cellX].push_back(brick);
+                }
+            }
+            else if (tileID == 3)
+            {
+                Platform* platform = new Platform(realX, realY, 15.0f, 15.0f, 201);
+                g_objectList.push_back(platform);
+
+                int cellX = (int)(realX / GRID_CELL_SIZE);
+                int cellY = (int)(realY / GRID_CELL_SIZE);
+
+                if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
+                    grid[cellY][cellX].push_back(platform);
                 }
             }
         }
@@ -336,7 +349,7 @@ void LoadResources()
     // 1. NẠP TÀI NGUYÊN
     // ==========================================
 
-    textures->Add(TEX_MARIO, L"assets/mario.png");
+    textures->Add(TEX_MARIO, L"assets/mario-luigi.png");
     textures->Add(TEX_COMMON, L"assets/CommonObjects&Pipes.png");
     textures->Add(TEX_HUD, L"assets/hud.png");
     textures->Add(TEX_INTRO, L"assets/intro_items.png");
@@ -347,23 +360,27 @@ void LoadResources()
     // ==========================================
 
     // Idle
-    sprites->Add(0, 211, 0, 223, 15, TEX_MARIO); // Phải
-    sprites->Add(1, 181, 0, 194, 15, TEX_MARIO); // Trái
+    sprites->Add(0, 115, 45, 126, 59, TEX_MARIO); // Phải
+    sprites->Add(1, 70, 45, 81, 59, TEX_MARIO); // Trái
     
     // Run
-    sprites->Add(2, 241, 0, 255, 14, TEX_MARIO);
-    sprites->Add(3, 272, 0, 284, 15, TEX_MARIO);
-    sprites->Add(4, 300, 0, 316, 15, TEX_MARIO);
-    sprites->Add(5, 150, 0, 164, 14, TEX_MARIO);
-    sprites->Add(6, 121, 0, 133, 15, TEX_MARIO);
-    sprites->Add(7, 89, 0, 105, 15, TEX_MARIO);
+    sprites->Add(2, 131, 44, 145, 59, TEX_MARIO);
+    sprites->Add(3, 148, 44, 163, 59, TEX_MARIO);
+
+    sprites->Add(4, 51, 44, 65, 59, TEX_MARIO);
+    sprites->Add(5, 33, 44, 48, 59, TEX_MARIO);
+
     
     // Jump
-    sprites->Add(8, 359, 0, 375, 15, TEX_MARIO);
-    sprites->Add(9, 29, 0, 45, 15, TEX_MARIO);
+    sprites->Add(6, 131, 26, 146, 41, TEX_MARIO);
+    sprites->Add(7, 50, 26, 65, 41, TEX_MARIO);
+
+    // Skid
+    sprites->Add(8, 166, 44, 179, 59, TEX_MARIO);
+    sprites->Add(9, 17, 44, 30, 59, TEX_MARIO);
 
     //  Brick
-    sprites->Add(10, 119, 36, 134, 51, TEX_COMMON);
+    sprites->Add(10, 435, 152, 450, 167, TEX_COMMON);
 
     // Bounding Box
     sprites->Add(99999, 0, 0, 9, 9, 99);
@@ -376,11 +393,14 @@ void LoadResources()
     ani = new Animation(100); ani->Add(0, 1000); animations->Add(100, ani);
     ani = new Animation(100); ani->Add(1, 1000); animations->Add(101, ani);
     
-    ani = new Animation(100); ani->Add(2); ani->Add(3); ani->Add(4); animations->Add(102, ani);
-    ani = new Animation(100); ani->Add(5); ani->Add(6); ani->Add(7); animations->Add(103, ani);
+    ani = new Animation(100); ani->Add(2); ani->Add(0); ani->Add(3); animations->Add(102, ani);
+    ani = new Animation(100); ani->Add(4); ani->Add(1); ani->Add(5); animations->Add(103, ani);
     
-    ani = new Animation(100); ani->Add(8, 1000); animations->Add(104, ani);
-    ani = new Animation(100); ani->Add(9, 1000); animations->Add(105, ani);
+    ani = new Animation(100); ani->Add(6, 1000); animations->Add(104, ani);
+    ani = new Animation(100); ani->Add(7, 1000); animations->Add(105, ani);
+
+    ani = new Animation(100); ani->Add(8, 1000); animations->Add(106, ani);
+    ani = new Animation(100); ani->Add(9, 1000); animations->Add(107, ani);
 
     // Tạo animation cho Brick
     ani = new Animation(100); ani->Add(10, 1000); animations->Add(201, ani);
@@ -394,7 +414,7 @@ void LoadResources()
     g_objectList.push_back(mario);
 
     // Khởi tạp map
-    LoadMap(L"assets/testmap.txt");
+    LoadMap(L"levels/testmap.txt");
 
     // Cắt 10 số (0-9)
     for (int i = 0; i < 10; i++)
