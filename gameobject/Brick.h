@@ -1,18 +1,12 @@
 #pragma once
+#include "../core/GameObject.h"
 
-#include "GameObject.h"
-#include "Animation.h"
-#include "Animations.h"
-
-#define ID_ANI_BRICK 100
-#define BRICK_WIDTH 16
-#define BRICK_BBOX_WIDTH 16
-#define BRICK_BBOX_HEIGHT 16
-
-class CBrick : public CGameObject {
+class Brick : public GameObject
+{
 public:
-	CBrick(float x, float y) : CGameObject(x, y) {}
-	void Render();
-	void Update(DWORD dt, vector<LPGAMEOBJECT>* coObjects = NULL) {}
-	void GetBoundingBox(float& l, float& t, float& r, float& b);
-}; 
+    Brick(float x, float y);
+    virtual void Update(DWORD dt);
+    virtual void Render();
+    virtual void GetBoundingBox(float& left, float& top, float& right, float& bottom);
+};
+
