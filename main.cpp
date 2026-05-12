@@ -6,6 +6,10 @@
 #include "render/Textures.h"
 #include "gameobject/Mario.h"
 #include "gameobject/Brick.h"
+#include "gameobject/Platform.h"
+#include "gameobject/Enemy.h"
+#include "gameobject/Buff.h"
+#include "gameobject/Flag.h"
 #include "ui/HUD.h"
 #include "ui/Intro.h"
 #include "audio/AudioManager.h"
@@ -51,7 +55,10 @@ enum TEXTURE_ID {
     TEX_COMMON = 1,
     TEX_HUD = 20,
     TEX_INTRO = 30,
-    TEX_BBOX = 99
+    TEX_BBOX = 99,
+	TEX_ENEMY_TEST = 100,
+	TEX_POTION = 101,
+	TEX_FLAG = 102
 };
 
 #pragma endregion
@@ -64,6 +71,10 @@ void LoadResources();
 void Update(DWORD dt);
 void Render();
 void Cleanup();
+void AddObjectToGrid(GameObject* obj);
+void RemoveObjectFromGrid(GameObject* obj);
+void UpdateObjectGrid(GameObject* obj);
+void SpawnEnemy(float x, float y);
 
 #pragma endregion
 
@@ -174,14 +185,15 @@ void Update(DWORD dt)
     }
     else {
         HUD::GetInstance()->Update(dt);
-        int soLanKiemTraVaCham = 0;
         for (GameObject* obj : g_objectList)
         {
+            if (obj->IsDeleted())
+                continue;
             if (obj->isStatic == true) {
                 obj->Update(dt, NULL);
                 continue;
             }
-
+            UpdateObjectGrid(obj);
             int currentCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
             int currentCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
 
@@ -194,17 +206,36 @@ void Update(DWORD dt)
 
                     if (checkRow >= 0 && checkRow < MAX_CELL_ROW && checkCol >= 0 && checkCol < MAX_CELL_COL) {
                         for (GameObject* g : grid[checkRow][checkCol]) {
-                            nearbyObjects.push_back(g);
+                            if (std::find(nearbyObjects.begin(),
+                                nearbyObjects.end(),
+                                g) == nearbyObjects.end())
+                            {
+                                nearbyObjects.push_back(g);
+                            }
                         }
                     }
                 }
             }
-            soLanKiemTraVaCham += nearbyObjects.size();
             obj->Update(dt, &nearbyObjects);
         }
-        char debugStr[100];
-        sprintf_s(debugStr, "SO PHÉP TINH VA CHAM TRONG 1 FRAME: %d\n", soLanKiemTraVaCham);
-        OutputDebugStringA(debugStr);
+		// Xóa những object đã bị đánh dấu xóa
+        g_objectList.erase(
+            remove_if(
+                g_objectList.begin(),
+                g_objectList.end(),
+                [](GameObject* obj)
+                {
+                    if (obj->IsDeleted())
+                    {
+                        RemoveObjectFromGrid(obj);
+                        delete obj;
+                        return true;
+                    }
+
+                    return false;
+                }),
+            g_objectList.end()
+        );
     }
 }
 
@@ -242,22 +273,29 @@ void Render()
             game->GetSpriteHandler()->SetViewTransform(&matZoom);
             GameObject* mario = g_objectList.empty() ? NULL : g_objectList[0];
 
-            for (GameObject* obj : g_objectList)
+            for (size_t i = 1; i < g_objectList.size(); i++)
             {
+                GameObject* obj = g_objectList[i];
+                if (obj->IsDeleted())
+                    continue;
                 obj->Render();
+
                 if (g_showBBox && mario != NULL)
                 {
                     int marioCellX = (int)(mario->GetX() / GRID_CELL_SIZE);
                     int marioCellY = (int)(mario->GetY() / GRID_CELL_SIZE);
-
                     int objCellX = (int)(obj->GetX() / GRID_CELL_SIZE);
                     int objCellY = (int)(obj->GetY() / GRID_CELL_SIZE);
 
-                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1)
-                    {
+                    if (abs(marioCellX - objCellX) <= 1 && abs(marioCellY - objCellY) <= 1) {
                         obj->RenderBoundingBox();
                     }
                 }
+            }
+
+            if (mario != NULL) {
+                mario->Render();
+                if (g_showBBox) mario->RenderBoundingBox();
             }
             D3DXMATRIX matUI;
             D3DXMatrixScaling(&matUI, 1.0f, 1.0f, 1.0f);
@@ -303,9 +341,9 @@ void LoadMap(LPCWSTR filePath)
             int tileID;
             f >> tileID;
 
-            float realX = c * 16.0f;
+            float realX = c * 15.0f;
 
-            float realY = ((rows - r - 1) * 16.0f) + 50.0f;
+            float realY = ((rows - r - 1) * 15.0f) + 50.0f;
 
 
             if (tileID == 1 || tileID == 2)
@@ -317,14 +355,67 @@ void LoadMap(LPCWSTR filePath)
                 int cellY = (int)(realY / GRID_CELL_SIZE);
 
                 if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
-                    grid[cellY][cellX].push_back(brick);
+                    AddObjectToGrid(brick);
+                }
+            }
+            else if (tileID == 3)
+            {
+                Platform* platform = new Platform(realX, realY, 15.0f, 15.0f, 201);
+                g_objectList.push_back(platform);
+
+                int cellX = (int)(realX / GRID_CELL_SIZE);
+                int cellY = (int)(realY / GRID_CELL_SIZE);
+
+                if (cellX >= 0 && cellX < MAX_CELL_COL && cellY >= 0 && cellY < MAX_CELL_ROW) {
+                    AddObjectToGrid(platform);
                 }
             }
         }
     }
     f.close();
 }
+//thêm object vào grid ngay sau khi được khởi tạo
+void AddObjectToGrid(GameObject* obj)
+{
+    int col = (int)(obj->GetX() / GRID_CELL_SIZE);
+    int row = (int)(obj->GetY() / GRID_CELL_SIZE);
+    if (col < 0 || col >= MAX_CELL_COL ||
+        row < 0 || row >= MAX_CELL_ROW)
+        return;
+    grid[row][col].push_back(obj);
 
+    obj->gridRow = row;
+    obj->gridCol = col;
+}
+//xóa object khỏi grid khi nó bị hủy hoặc di chuyển ra khỏi cell cũ
+void RemoveObjectFromGrid(GameObject* obj)
+{
+    if (obj->gridRow < 0 || obj->gridCol < 0)
+        return;
+    auto& cell = grid[obj->gridRow][obj->gridCol];
+    cell.erase(
+        std::remove(cell.begin(), cell.end(), obj),
+        cell.end()
+    );
+}
+//cập nhật vị trí của object trong grid khi nó di chuyển
+void UpdateObjectGrid(GameObject* obj)
+{
+    int newCol = (int)(obj->GetX() / GRID_CELL_SIZE);
+    int newRow = (int)(obj->GetY() / GRID_CELL_SIZE);
+
+    if (newCol == obj->gridCol &&
+        newRow == obj->gridRow)
+        return;
+    RemoveObjectFromGrid(obj);
+    if (newCol < 0 || newCol >= MAX_CELL_COL ||
+        newRow < 0 || newRow >= MAX_CELL_ROW)
+        return;
+    grid[newRow][newCol].push_back(obj);
+
+    obj->gridRow = newRow;
+    obj->gridCol = newCol;
+}
 void LoadResources()
 {
     Textures* textures = Textures::GetInstance();
@@ -336,37 +427,48 @@ void LoadResources()
     // 1. NẠP TÀI NGUYÊN
     // ==========================================
 
-    textures->Add(TEX_MARIO, L"assets/mario.png");
+    textures->Add(TEX_MARIO, L"assets/mario-luigi.png");
     textures->Add(TEX_COMMON, L"assets/CommonObjects&Pipes.png");
     textures->Add(TEX_HUD, L"assets/hud.png");
     textures->Add(TEX_INTRO, L"assets/intro_items.png");
     textures->Add(TEX_BBOX, L"assets/bbox.png");
+    textures->Add(TEX_ENEMY_TEST, L"assets/enemy.png");
+	textures->Add(TEX_POTION, L"assets/potion.png");
 
     // ==========================================
     // 2. CẮT SPRITES
     // ==========================================
 
     // Idle
-    sprites->Add(0, 211, 0, 223, 15, TEX_MARIO); // Phải
-    sprites->Add(1, 181, 0, 194, 15, TEX_MARIO); // Trái
+    sprites->Add(0, 115, 45, 126, 59, TEX_MARIO); // Phải
+    sprites->Add(1, 70, 45, 81, 59, TEX_MARIO); // Trái
     
     // Run
-    sprites->Add(2, 241, 0, 255, 14, TEX_MARIO);
-    sprites->Add(3, 272, 0, 284, 15, TEX_MARIO);
-    sprites->Add(4, 300, 0, 316, 15, TEX_MARIO);
-    sprites->Add(5, 150, 0, 164, 14, TEX_MARIO);
-    sprites->Add(6, 121, 0, 133, 15, TEX_MARIO);
-    sprites->Add(7, 89, 0, 105, 15, TEX_MARIO);
+    sprites->Add(2, 131, 44, 145, 59, TEX_MARIO);
+    sprites->Add(3, 148, 44, 163, 59, TEX_MARIO);
+
+    sprites->Add(4, 51, 44, 65, 59, TEX_MARIO);
+    sprites->Add(5, 33, 44, 48, 59, TEX_MARIO);
+
     
     // Jump
-    sprites->Add(8, 359, 0, 375, 15, TEX_MARIO);
-    sprites->Add(9, 29, 0, 45, 15, TEX_MARIO);
+    sprites->Add(6, 131, 26, 146, 41, TEX_MARIO);
+    sprites->Add(7, 50, 26, 65, 41, TEX_MARIO);
+
+    // Skid
+    sprites->Add(8, 166, 44, 179, 59, TEX_MARIO);
+    sprites->Add(9, 17, 44, 30, 59, TEX_MARIO);
 
     //  Brick
-    sprites->Add(10, 119, 36, 134, 51, TEX_COMMON);
+    sprites->Add(10, 435, 152, 450, 167, TEX_COMMON);
 
     // Bounding Box
     sprites->Add(99999, 0, 0, 9, 9, 99);
+
+    //enemy
+    sprites->Add(100, 0, 0, 16, 16, TEX_ENEMY_TEST);
+	//potion
+	sprites->Add(101, 0, 0, 16, 16, TEX_POTION);
     
     // ==========================================
     // 3. GOM SPRITES TẠO ANIMATION
@@ -376,25 +478,34 @@ void LoadResources()
     ani = new Animation(100); ani->Add(0, 1000); animations->Add(100, ani);
     ani = new Animation(100); ani->Add(1, 1000); animations->Add(101, ani);
     
-    ani = new Animation(100); ani->Add(2); ani->Add(3); ani->Add(4); animations->Add(102, ani);
-    ani = new Animation(100); ani->Add(5); ani->Add(6); ani->Add(7); animations->Add(103, ani);
+    ani = new Animation(100); ani->Add(2); ani->Add(0); ani->Add(3); animations->Add(102, ani);
+    ani = new Animation(100); ani->Add(4); ani->Add(1); ani->Add(5); animations->Add(103, ani);
     
-    ani = new Animation(100); ani->Add(8, 1000); animations->Add(104, ani);
-    ani = new Animation(100); ani->Add(9, 1000); animations->Add(105, ani);
+    ani = new Animation(100); ani->Add(6, 1000); animations->Add(104, ani);
+    ani = new Animation(100); ani->Add(7, 1000); animations->Add(105, ani);
+
+    ani = new Animation(100); ani->Add(8, 1000); animations->Add(106, ani);
+    ani = new Animation(100); ani->Add(9, 1000); animations->Add(107, ani);
 
     // Tạo animation cho Brick
     ani = new Animation(100); ani->Add(10, 1000); animations->Add(201, ani);
+
+    //Tạo animation cho Enemy
+	ani = new Animation(100); ani->Add(100, 1000); animations->Add(300, ani);
 
     // ==========================================
     // 4. KHỞI TẠO OBJECT
     // ==========================================
 
     // Khởi tạo Mario
-    Mario* mario = new Mario(100.0f, 200.0f, MARIO_WIDTH, MARIO_HEIGHT);
+    Mario* mario = new Mario(100.0f, 200.0f);
     g_objectList.push_back(mario);
 
+	//Khởi tạo Enemy
+	SpawnEnemy(200.0f, 200.0f);
+
     // Khởi tạp map
-    LoadMap(L"assets/testmap.txt");
+    LoadMap(L"levels/testmap.txt");
 
     // Cắt 10 số (0-9)
     for (int i = 0; i < 10; i++)
@@ -410,6 +521,15 @@ void LoadResources()
     intro->LoadSprites();
     // Khởi tạo Intro
     introScene = new Intro();
+    //Khởi tạo Potion
+	Buff* potion = new Buff(150.0f, 200.0f);
+    g_objectList.push_back(potion);
+    AddObjectToGrid(potion);
+
+	//Khởi tạo cờ
+	Flag* flag = new Flag(300.0f, 100.0f);
+    g_objectList.push_back(flag);
+    AddObjectToGrid(flag);
 
     // ==========================================
     // 5. NẠP VÀ PHÁT ÂM THANH (Thêm toàn bộ đoạn này)
@@ -443,6 +563,12 @@ void Cleanup()
     // Textures::GetInstance()->Clear();
 
     Game::GetInstance()->ReleaseDirectX();
+}
+void SpawnEnemy(float x, float y)
+{
+    Enemy* enemy = new Enemy(x, y, 16.0f, 16.0f);
+    g_objectList.push_back(enemy);
+    AddObjectToGrid(enemy);
 }
 
 #pragma endregion

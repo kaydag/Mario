@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Windows.h>
 #include <algorithm>
 #include <vector>
@@ -10,8 +10,12 @@ protected:
     float x, y;
     float vx, vy;
     int nx;
+    bool isDeleted;
 
 public:
+    //địa chỉ trong grid của object
+    int gridRow;
+    int gridCol;
     float GetX() { return x; }
     float GetY() { return y; }
     bool isStatic = false;
@@ -20,5 +24,7 @@ public:
     virtual void Update(DWORD dt, vector<GameObject*>* coObjects);
     virtual void Render() = 0;
     virtual void RenderBoundingBox();
+    virtual void Delete();
+    bool IsDeleted() const;
     virtual ~GameObject() {}
 };
