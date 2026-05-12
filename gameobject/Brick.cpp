@@ -24,3 +24,4 @@ void Brick::GetBoundingBox(float& left, float& top, float& right, float& bottom)
     right = x + 16.0f;
     bottom = y + 16.0f;
 }
+
