@@ -8,6 +8,8 @@
 #include "gameobject/Brick.h"
 #include "gameobject/Platform.h"
 #include "gameobject/Enemy.h"
+#include "gameobject/Buff.h"
+#include "gameobject/Flag.h"
 #include "ui/HUD.h"
 #include "ui/Intro.h"
 #include "audio/AudioManager.h"
@@ -54,7 +56,9 @@ enum TEXTURE_ID {
     TEX_HUD = 20,
     TEX_INTRO = 30,
     TEX_BBOX = 99,
-	TEX_ENEMY_TEST = 100
+	TEX_ENEMY_TEST = 100,
+	TEX_POTION = 101,
+	TEX_FLAG = 102
 };
 
 #pragma endregion
@@ -183,6 +187,8 @@ void Update(DWORD dt)
         HUD::GetInstance()->Update(dt);
         for (GameObject* obj : g_objectList)
         {
+            if (obj->IsDeleted())
+                continue;
             if (obj->isStatic == true) {
                 obj->Update(dt, NULL);
                 continue;
@@ -212,6 +218,24 @@ void Update(DWORD dt)
             }
             obj->Update(dt, &nearbyObjects);
         }
+		// Xóa những object đã bị đánh dấu xóa
+        g_objectList.erase(
+            remove_if(
+                g_objectList.begin(),
+                g_objectList.end(),
+                [](GameObject* obj)
+                {
+                    if (obj->IsDeleted())
+                    {
+                        RemoveObjectFromGrid(obj);
+                        delete obj;
+                        return true;
+                    }
+
+                    return false;
+                }),
+            g_objectList.end()
+        );
     }
 }
 
@@ -252,6 +276,8 @@ void Render()
             for (size_t i = 1; i < g_objectList.size(); i++)
             {
                 GameObject* obj = g_objectList[i];
+                if (obj->IsDeleted())
+                    continue;
                 obj->Render();
 
                 if (g_showBBox && mario != NULL)
@@ -407,6 +433,7 @@ void LoadResources()
     textures->Add(TEX_INTRO, L"assets/intro_items.png");
     textures->Add(TEX_BBOX, L"assets/bbox.png");
     textures->Add(TEX_ENEMY_TEST, L"assets/enemy.png");
+	textures->Add(TEX_POTION, L"assets/potion.png");
 
     // ==========================================
     // 2. CẮT SPRITES
@@ -440,6 +467,8 @@ void LoadResources()
 
     //enemy
     sprites->Add(100, 0, 0, 16, 16, TEX_ENEMY_TEST);
+	//potion
+	sprites->Add(101, 0, 0, 16, 16, TEX_POTION);
     
     // ==========================================
     // 3. GOM SPRITES TẠO ANIMATION
@@ -469,7 +498,7 @@ void LoadResources()
     // ==========================================
 
     // Khởi tạo Mario
-    Mario* mario = new Mario(100.0f, 200.0f, MARIO_WIDTH, MARIO_HEIGHT);
+    Mario* mario = new Mario(100.0f, 200.0f);
     g_objectList.push_back(mario);
 
 	//Khởi tạo Enemy
@@ -492,6 +521,15 @@ void LoadResources()
     intro->LoadSprites();
     // Khởi tạo Intro
     introScene = new Intro();
+    //Khởi tạo Potion
+	Buff* potion = new Buff(150.0f, 200.0f);
+    g_objectList.push_back(potion);
+    AddObjectToGrid(potion);
+
+	//Khởi tạo cờ
+	Flag* flag = new Flag(300.0f, 100.0f);
+    g_objectList.push_back(flag);
+    AddObjectToGrid(flag);
 
     // ==========================================
     // 5. NẠP VÀ PHÁT ÂM THANH (Thêm toàn bộ đoạn này)
